@@ -1,25 +1,28 @@
 <template>
-  <div class="admin-posts">
-    <div class="posts-header">
+  <div class="posts-page">
+    <div class="page-header">
       <h1>投稿一覧</h1>
       <NuxtLink to="/admin/posts/new" class="new-post-btn">新規投稿</NuxtLink>
     </div>
-    
+
     <div v-if="loading" class="loading">
       読み込み中...
     </div>
+    
     <div v-else-if="error" class="error">
       {{ error }}
     </div>
+    
     <div v-else-if="posts.length === 0" class="no-posts">
       投稿がありません
     </div>
+    
     <div v-else class="posts-table">
       <table>
         <thead>
           <tr>
             <th>ID</th>
-            <th>タイトル</th>
+            <th>曲のタイトル</th>
             <th>アーティスト</th>
             <th>投稿日</th>
             <th>操作</th>
@@ -45,15 +48,18 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useBlog } from '~/composables/useBlog'
+import { useAuth } from '~/composables/useAuth'
+import { API_ENDPOINTS } from '~/constants/api'
 
 definePageMeta({
   layout: 'admin'
 })
 
 const { posts, loading, error, fetchPosts } = useBlog()
+const { getToken } = useAuth()
 
 onMounted(() => {
-  fetchPosts()
+  fetchPosts(true)
 })
 
 const formatDate = (dateString: string) => {
@@ -65,34 +71,39 @@ const formatDate = (dateString: string) => {
 }
 
 const deletePost = async (id: number) => {
-  if (!confirm('この投稿を削除してもよろしいですか？')) return
+  if (!confirm('この投稿を削除してもよろしいですか？')) {
+    return
+  }
   
   try {
-    const response = await fetch(`http://127.0.0.1:8000/blog/posts/${id}/`, {
+    const token = getToken()
+    const response = await fetch(API_ENDPOINTS.ADMIN.POST_DETAIL(id), {
       method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
     })
     
     if (!response.ok) {
       throw new Error('投稿の削除に失敗しました')
     }
     
-    // 削除成功後、投稿一覧を再取得
-    fetchPosts()
-  } catch (e) {
-    alert(e instanceof Error ? e.message : '予期せぬエラーが発生しました')
+    // 投稿一覧を再取得
+    fetchPosts(true)
+  } catch (error) {
+    console.error('削除エラー:', error)
+    alert('投稿の削除に失敗しました。もう一度お試しください。')
   }
 }
 </script>
 
 <style scoped>
-.admin-posts {
-  background: white;
-  border-radius: 8px;
-  padding: 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+.posts-page {
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.posts-header {
+.page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -102,26 +113,36 @@ const deletePost = async (id: number) => {
 h1 {
   margin: 0;
   color: #1a237e;
-  font-size: 2rem;
 }
 
 .new-post-btn {
-  display: inline-block;
-  padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+  background: #1a237e;
   color: white;
+  padding: 0.75rem 1.5rem;
   border-radius: 4px;
   text-decoration: none;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s;
 }
 
 .new-post-btn:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+  background: #0d47a1;
+}
+
+.loading, .error, .no-posts {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+}
+
+.error {
+  color: #d32f2f;
 }
 
 .posts-table {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   overflow-x: auto;
 }
 
@@ -131,9 +152,9 @@ table {
 }
 
 th, td {
-  padding: 0.75rem;
+  padding: 1rem;
   text-align: left;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid #eee;
 }
 
 th {
@@ -152,20 +173,19 @@ tr:hover {
 }
 
 .action-btn {
-  display: inline-block;
-  padding: 0.25rem 0.5rem;
+  padding: 0.5rem 1rem;
   border-radius: 4px;
-  text-decoration: none;
   font-size: 0.875rem;
   font-weight: 500;
-  transition: all 0.2s ease;
-  border: none;
   cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
 }
 
 .edit {
   background-color: #e3f2fd;
   color: #0d47a1;
+  border: none;
 }
 
 .edit:hover {
@@ -174,36 +194,23 @@ tr:hover {
 
 .delete {
   background-color: #ffebee;
-  color: #c62828;
+  color: #d32f2f;
+  border: none;
 }
 
 .delete:hover {
   background-color: #ffcdd2;
 }
 
-.loading, .error, .no-posts {
-  text-align: center;
-  padding: 2rem;
-  color: #666;
-}
-
-.error {
-  color: #dc3545;
-}
-
 @media (max-width: 768px) {
-  .admin-posts {
-    padding: 1rem;
-  }
-  
-  .posts-header {
+  .page-header {
     flex-direction: column;
     gap: 1rem;
     align-items: flex-start;
   }
   
   th, td {
-    padding: 0.5rem;
+    padding: 0.75rem 0.5rem;
   }
   
   .actions {

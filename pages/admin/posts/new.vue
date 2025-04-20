@@ -3,24 +3,38 @@
     <h1>新規投稿</h1>
     <form @submit.prevent="handleSubmit" class="post-form">
       <div class="form-group">
-        <label for="title">タイトル</label>
+        <label for="song_title">曲のタイトル</label>
         <input
-          id="title"
-          v-model="title"
+          id="song_title"
+          v-model="song_title"
           type="text"
           required
           class="form-control"
+          placeholder="曲のタイトルを入力"
         />
       </div>
-
+      
       <div class="form-group">
-        <label for="content">本文</label>
+        <label for="artist">アーティスト</label>
+        <input
+          id="artist"
+          v-model="artist"
+          type="text"
+          required
+          class="form-control"
+          placeholder="アーティスト名を入力"
+        />
+      </div>
+      
+      <div class="form-group">
+        <label for="body">本文</label>
         <textarea
-          id="content"
-          v-model="content"
+          id="body"
+          v-model="body"
           required
           class="form-control"
           rows="10"
+          placeholder="記事の本文を入力"
         ></textarea>
       </div>
 
@@ -37,6 +51,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { API_ENDPOINTS } from '~/constants/api'
 import { useAuth } from '~/composables/useAuth'
 
 definePageMeta({
@@ -46,35 +61,62 @@ definePageMeta({
 const router = useRouter()
 const { getToken } = useAuth()
 
-const title = ref('')
-const content = ref('')
+const song_title = ref('')
+const artist = ref('')
+const body = ref('')
 const isSubmitting = ref(false)
 
 const handleSubmit = async () => {
   try {
     isSubmitting.value = true
-    const token = getToken()
     
-    const response = await fetch('http://127.0.0.1:8000/blog/posts/', {
+    const requestBody = {
+      song_title: song_title.value,
+      artist: artist.value,
+      body: body.value
+    }
+    
+    const token = getToken()
+    if (!token) {
+      throw new Error('認証情報が見つかりません。再度ログインしてください。')
+    }
+    
+    const url = API_ENDPOINTS.ADMIN.POSTS()
+    console.log('リクエスト詳細:', {
+      url,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Token ${token}`
       },
-      body: JSON.stringify({
-        title: title.value,
-        content: content.value
-      })
+      body: requestBody
+    })
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Token ${token}`
+      },
+      body: JSON.stringify(requestBody)
+    })
+
+    const responseData = await response.json().catch(() => null)
+    console.log('レスポンス詳細:', {
+      status: response.status,
+      statusText: response.statusText,
+      data: responseData
     })
 
     if (!response.ok) {
-      throw new Error('投稿に失敗しました')
+      const errorMessage = responseData?.error || responseData?.detail || `投稿の作成に失敗しました (${response.status})`
+      throw new Error(errorMessage)
     }
 
     router.push('/admin/posts')
   } catch (error) {
     console.error('投稿エラー:', error)
-    alert('投稿に失敗しました。もう一度お試しください。')
+    alert(error instanceof Error ? error.message : '投稿の作成に失敗しました。もう一度お試しください。')
   } finally {
     isSubmitting.value = false
   }

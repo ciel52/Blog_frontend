@@ -1,64 +1,78 @@
 <template>
   <div class="post-detail">
     <div v-if="loading" class="loading">
-      読み込み中...
+      <div class="spinner"></div>
+      <p>読み込み中...</p>
     </div>
+
     <div v-else-if="error" class="error">
-      {{ error }}
+      <p>{{ error }}</p>
+      <button class="back-button" @click="goBack">← 戻る</button>
     </div>
+
     <div v-else-if="currentPost" class="post-content">
       <div class="post-header">
-        <!--div class="category-label">{{ currentPost.category }}</div-->
+        <div class="category-label">{{ getCategoryLabel(currentPost) }}</div>
         <h1 class="post-title">{{ currentPost.song_title }}</h1>
-        <p class="post-artist">{{ currentPost.artist }}</p>
-        <p class="post-date">{{ formatDate(currentPost.posted_at) }}</p>
+        <div class="post-meta">
+          <span class="post-date">{{ formatDate(currentPost.posted_at) }}</span>
+          <span class="post-author">{{ currentPost.artist }}</span>
+        </div>
       </div>
 
       <div class="post-body">
-        <p v-for="(paragraph, index) in paragraphs" :key="index">{{ paragraph }}</p>
+        <p v-for="(paragraph, index) in paragraphs" :key="index">
+          {{ paragraph }}
+        </p>
       </div>
 
       <div class="post-footer">
-        <NuxtLink to="/" class="back-link">
-          <span class="back-arrow">←</span> トップページに戻る
-        </NuxtLink>
+        <button class="back-button" @click="goBack">← 戻る</button>
       </div>
     </div>
-    <div v-else class="not-found">
-      記事が見つかりませんでした
+
+    <div v-else class="error">
+      <p>投稿が見つかりませんでした</p>
+      <button class="back-button" @click="goBack">← 戻る</button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { useBlog } from '~/composables/useBlog'
+import { useRouter, useRoute } from 'vue-router'
+import { useBlog, type BlogPost } from '~/composables/useBlog'
 
+const router = useRouter()
 const route = useRoute()
 const { currentPost, loading, error, fetchPostById } = useBlog()
 
-const postId = computed(() => {
-  const id = route.params.id
-  if (typeof id === 'string') {
-    return parseInt(id, 10)
-  }
-  return 0
-})
-
-onMounted(() => {
-  if (postId.value > 0) {
-    fetchPostById(postId.value)
-  }
-})
-
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
+  const date = new Date(dateString)
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
 }
+
+const getCategoryLabel = (post: BlogPost) => {
+  return '音楽日記'
+}
+
+const goBack = () => {
+  router.back()
+}
+
+onMounted(async () => {
+  const postId = parseInt(route.params.id as string, 10)
+  if (isNaN(postId)) {
+    router.push('/')
+    return
+  }
+  
+  try {
+    await fetchPostById(postId)
+  } catch (error) {
+    console.error('データの取得に失敗しました', error)
+  }
+})
 
 const paragraphs = computed(() => {
   if (!currentPost.value) return []

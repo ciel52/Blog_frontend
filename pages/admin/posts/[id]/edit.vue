@@ -1,247 +1,228 @@
 <template>
-  <div class="post-form">
+  <div class="edit-post">
     <h1>投稿を編集</h1>
-    
     <div v-if="loading" class="loading">
       読み込み中...
     </div>
     <div v-else-if="error" class="error">
       {{ error }}
     </div>
-    <div v-else-if="!currentPost" class="not-found">
-      投稿が見つかりませんでした
-    </div>
-    <form v-else @submit.prevent="updatePost" class="form">
+    <form v-else @submit.prevent="handleSubmit" class="post-form">
       <div class="form-group">
         <label for="song_title">曲のタイトル</label>
-        <input 
-          id="song_title" 
-          v-model="formData.song_title" 
-          type="text" 
+        <input
+          id="song_title"
+          v-model="song_title"
+          type="text"
           required
+          class="form-control"
           placeholder="曲のタイトルを入力"
         />
       </div>
       
       <div class="form-group">
         <label for="artist">アーティスト</label>
-        <input 
-          id="artist" 
-          v-model="formData.artist" 
-          type="text" 
+        <input
+          id="artist"
+          v-model="artist"
+          type="text"
           required
+          class="form-control"
           placeholder="アーティスト名を入力"
         />
       </div>
       
       <div class="form-group">
         <label for="body">本文</label>
-        <textarea 
-          id="body" 
-          v-model="formData.body" 
-          rows="10" 
+        <textarea
+          id="body"
+          v-model="body"
           required
+          class="form-control"
+          rows="10"
           placeholder="記事の本文を入力"
         ></textarea>
       </div>
-      
+
       <div class="form-actions">
-        <button type="button" @click="goBack" class="btn cancel">キャンセル</button>
-        <button type="submit" class="btn submit" :disabled="submitting">
-          {{ submitting ? '更新中...' : '更新する' }}
+        <button type="submit" class="submit-btn" :disabled="isSubmitting">
+          {{ isSubmitting ? '更新中...' : '更新する' }}
         </button>
+        <NuxtLink to="/admin/posts" class="cancel-btn">キャンセル</NuxtLink>
       </div>
     </form>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useAuth } from '~/composables/useAuth'
 import { useBlog } from '~/composables/useBlog'
+import { API_ENDPOINTS } from '~/constants/api'
 
 definePageMeta({
   layout: 'admin'
 })
 
-const route = useRoute()
 const router = useRouter()
-const { currentPost, loading, error, fetchPostById } = useBlog()
-const submitting = ref(false)
+const route = useRoute()
+const { getToken } = useAuth()
+const { fetchPostById } = useBlog()
 
-const postId = computed(() => {
-  const id = route.params.id
-  if (typeof id === 'string') {
-    return parseInt(id, 10)
-  }
-  return 0
-})
+const song_title = ref('')
+const artist = ref('')
+const body = ref('')
+const isSubmitting = ref(false)
+const loading = ref(true)
+const error = ref<string | null>(null)
 
-const formData = ref({
-  song_title: '',
-  artist: '',
-  body: ''
-})
+const postId = route.params.id as string
 
-// 現在の投稿データが変更されたら、フォームデータを更新
-watch(currentPost, (newPost) => {
-  if (newPost) {
-    formData.value = {
-      song_title: newPost.song_title,
-      artist: newPost.artist,
-      body: newPost.body
-    }
-  }
-}, { immediate: true })
-
-onMounted(() => {
-  if (postId.value > 0) {
-    fetchPostById(postId.value)
-  }
-})
-
-const updatePost = async () => {
-  submitting.value = true
-  
+onMounted(async () => {
   try {
-    const response = await fetch(`http://127.0.0.1:8000/blog/posts/${postId.value}/`, {
+    loading.value = true
+    error.value = null
+    
+    const post = await fetchPostById(parseInt(postId), true)
+    if (post) {
+      song_title.value = post.song_title
+      artist.value = post.artist
+      body.value = post.body
+    } else {
+      error.value = '投稿が見つかりませんでした'
+    }
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '予期せぬエラーが発生しました'
+    console.error('投稿取得エラー:', e)
+  } finally {
+    loading.value = false
+  }
+})
+
+const handleSubmit = async () => {
+  try {
+    isSubmitting.value = true
+    const token = getToken()
+    
+    const response = await fetch(API_ENDPOINTS.ADMIN.POST_DETAIL(parseInt(postId)), {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Token ${token}`
       },
-      body: JSON.stringify(formData.value)
+      body: JSON.stringify({
+        song_title: song_title.value,
+        artist: artist.value,
+        body: body.value
+      })
     })
-    
+
     if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      console.error('更新エラー詳細:', errorData)
       throw new Error('投稿の更新に失敗しました')
     }
-    
-    // 更新成功後、投稿一覧ページに遷移
-    router.push('/admin/posts')
-  } catch (e) {
-    alert(e instanceof Error ? e.message : '予期せぬエラーが発生しました')
-    submitting.value = false
-  }
-}
 
-const goBack = () => {
-  router.back()
+    router.push('/admin/posts')
+  } catch (error) {
+    console.error('更新エラー:', error)
+    alert('投稿の更新に失敗しました。もう一度お試しください。')
+  } finally {
+    isSubmitting.value = false
+  }
 }
 </script>
 
 <style scoped>
-.post-form {
-  background: white;
-  border-radius: 8px;
-  padding: 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+.edit-post {
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 h1 {
-  margin-top: 0;
   margin-bottom: 2rem;
   color: #1a237e;
-  font-size: 2rem;
 }
 
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+.loading, .error {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+}
+
+.error {
+  color: #d32f2f;
+}
+
+.post-form {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 
 label {
+  display: block;
+  margin-bottom: 0.5rem;
   font-weight: 500;
   color: #333;
 }
 
-input, textarea {
+.form-control {
+  width: 100%;
   padding: 0.75rem;
-  border: 1px solid #ced4da;
+  border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 1rem;
-  transition: border-color 0.2s ease;
 }
 
-input:focus, textarea:focus {
-  outline: none;
-  border-color: #1a237e;
-  box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
-}
-
-textarea {
+textarea.form-control {
   resize: vertical;
-  min-height: 150px;
+  min-height: 200px;
 }
 
 .form-actions {
   display: flex;
   gap: 1rem;
-  margin-top: 1rem;
+  margin-top: 2rem;
 }
 
-.btn {
-  padding: 0.75rem 1.5rem;
-  border-radius: 4px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: none;
-  font-size: 1rem;
-}
-
-.submit {
-  background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+.submit-btn {
+  background: #1a237e;
   color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
 }
 
-.submit:hover:not(:disabled) {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+.submit-btn:hover {
+  background: #0d47a1;
 }
 
-.submit:disabled {
-  opacity: 0.7;
+.submit-btn:disabled {
+  background: #9fa8da;
   cursor: not-allowed;
 }
 
-.cancel {
-  background-color: #f8f9fa;
-  color: #495057;
-  border: 1px solid #ced4da;
-}
-
-.cancel:hover {
-  background-color: #e9ecef;
-}
-
-.loading, .error, .not-found {
-  text-align: center;
-  padding: 2rem;
+.cancel-btn {
+  padding: 0.75rem 1.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
   color: #666;
+  text-decoration: none;
+  transition: all 0.2s;
 }
 
-.error {
-  color: #dc3545;
-}
-
-@media (max-width: 768px) {
-  .post-form {
-    padding: 1rem;
-  }
-  
-  .form-actions {
-    flex-direction: column;
-  }
-  
-  .btn {
-    width: 100%;
-  }
+.cancel-btn:hover {
+  background: #f5f5f5;
+  color: #333;
 }
 </style> 

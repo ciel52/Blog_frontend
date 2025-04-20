@@ -1,30 +1,39 @@
 <template>
-  <div class="home">
-    <section class="hero">
+  <div class="blog-page">
+    <header class="blog-header">
       <h1>音楽ブログ</h1>
-      <p>音楽を通じて、あなたの記憶を共有しましょう</p>
-    </section>
+      <p class="subtitle">音楽の魅力を語るブログ</p>
+    </header>
 
-    <section class="posts">
-      <h2>最新の記事</h2>
+    <main class="blog-main">
       <div v-if="loading" class="loading">
         読み込み中...
       </div>
+
       <div v-else-if="error" class="error">
         {{ error }}
       </div>
+
+      <div v-else-if="posts.length === 0" class="no-posts">
+        投稿がありません
+      </div>
+
       <div v-else class="posts-grid">
         <article v-for="post in posts" :key="post.id" class="post-card">
-          <h3>{{ post.song_title }}</h3>
-          <p class="post-artist">{{ post.artist }}</p>
-          <p class="post-date">{{ formatDate(post.posted_at) }}</p>
-          <p class="post-excerpt">{{ truncateContent(post.body) }}</p>
-          <NuxtLink :to="`/posts/${post.id}`" class="read-more">
-            続きを読む
-          </NuxtLink>
+          <div class="post-content">
+            <h2 class="post-title">{{ post.song_title }}</h2>
+            <p class="post-artist">アーティスト: {{ post.artist }}</p>
+            <p class="post-excerpt">{{ post.body.substring(0, 200) }}...</p>
+          </div>
+          <div class="post-footer">
+            <NuxtLink :to="`/posts/${post.id}`" class="read-more">
+              続きを読む
+            </NuxtLink>
+            <span class="post-date">{{ formatDate(post.posted_at) }}</span>
+          </div>
         </article>
       </div>
-    </section>
+    </main>
   </div>
 </template>
 
@@ -45,60 +54,39 @@ const formatDate = (dateString: string) => {
     day: 'numeric'
   })
 }
-
-const truncateContent = (content: string) => {
-  return content.length > 150 ? content.slice(0, 150) + '...' : content
-}
 </script>
 
 <style scoped>
-.home {
+.blog-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
-  background-color: #f5f5f5;
-  min-height: 100vh;
+  padding: 2rem 1rem;
 }
 
-.hero {
+.blog-header {
   text-align: center;
-  padding: 4rem 0;
-  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-  border-radius: 12px;
   margin-bottom: 3rem;
-  color: white;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 
-.hero h1 {
-  font-size: 3rem;
-  color: white;
-  margin-bottom: 1rem;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+h1 {
+  font-size: 2.5rem;
+  color: #1a237e;
+  margin-bottom: 0.5rem;
 }
 
-.hero p {
-  font-size: 1.4rem;
-  color: rgba(255, 255, 255, 0.9);
+.subtitle {
+  color: #666;
+  font-size: 1.2rem;
 }
 
-.posts h2 {
-  font-size: 2.2rem;
-  color: #333;
-  margin-bottom: 2rem;
-  position: relative;
-  padding-bottom: 0.5rem;
+.loading, .error, .no-posts {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
 }
 
-.posts h2::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 60px;
-  height: 4px;
-  background: linear-gradient(90deg, #6a11cb, #2575fc);
-  border-radius: 2px;
+.error {
+  color: #d32f2f;
 }
 
 .posts-grid {
@@ -109,124 +97,74 @@ const truncateContent = (content: string) => {
 
 .post-card {
   background: white;
-  border-radius: 12px;
-  padding: 1.8rem;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  position: relative;
+  border-radius: 8px;
   overflow: hidden;
-}
-
-.post-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 4px;
-  background: linear-gradient(90deg, #6a11cb, #2575fc);
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .post-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.post-card:hover::before {
-  opacity: 1;
+.post-content {
+  padding: 1.5rem;
 }
 
-.post-card h3 {
-  font-size: 1.6rem;
-  color: #222;
-  margin-bottom: 0.6rem;
-  line-height: 1.3;
+.post-title {
+  margin: 0 0 0.5rem 0;
+  color: #1a237e;
+  font-size: 1.5rem;
 }
 
 .post-artist {
-  color: #555;
-  font-size: 1.1rem;
-  margin-bottom: 0.6rem;
-  font-weight: 500;
-}
-
-.post-date {
-  color: #777;
+  color: #666;
+  margin-bottom: 1rem;
   font-size: 0.9rem;
-  margin-bottom: 1.2rem;
 }
 
 .post-excerpt {
-  color: #444;
-  line-height: 1.7;
-  margin-bottom: 1.8rem;
-  font-size: 1rem;
+  color: #333;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.post-footer {
+  padding: 1rem 1.5rem;
+  background: #f8f9fa;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .read-more {
-  display: inline-block;
-  color: #2575fc;
+  color: #1a237e;
   text-decoration: none;
-  font-weight: 600;
-  font-size: 1rem;
-  transition: all 0.2s ease;
-  position: relative;
-}
-
-.read-more::after {
-  content: '→';
-  margin-left: 5px;
-  transition: transform 0.2s ease;
+  font-weight: 500;
+  transition: color 0.2s;
 }
 
 .read-more:hover {
-  color: #6a11cb;
+  color: #0d47a1;
 }
 
-.read-more:hover::after {
-  transform: translateX(5px);
-}
-
-.loading, .error {
-  text-align: center;
-  padding: 3rem;
+.post-date {
   color: #666;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-}
-
-.error {
-  color: #dc3545;
-  border: 1px solid rgba(220, 53, 69, 0.2);
+  font-size: 0.9rem;
 }
 
 @media (max-width: 768px) {
-  .home {
+  .blog-page {
     padding: 1rem;
   }
-  
-  .hero {
-    padding: 3rem 1rem;
+
+  h1 {
+    font-size: 2rem;
   }
-  
-  .hero h1 {
-    font-size: 2.2rem;
-  }
-  
-  .hero p {
-    font-size: 1.1rem;
-  }
-  
-  .posts h2 {
-    font-size: 1.8rem;
-  }
-  
-  .post-card {
-    padding: 1.5rem;
+
+  .posts-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

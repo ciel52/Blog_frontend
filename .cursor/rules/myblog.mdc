@@ -1,0 +1,21 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+- You can @ files here
+- You can use markdown but dont have to
+
+このファイルを読んだことを確認するために返信の際はまずこのファイル名を読んだことを口に出してください。
+
+ブログをDjango Rest Framework, Nuxt3, Mysqlで作っています。
+
+バックエンドはblog_frontendと同じ階層のkaida_developmentというディレクトリにあります。（参考にしてください。）
+
+
+大前提としてvueファイルのscript内で何度も出てくるような関数はcomposablesディレクトリ内で関数を作成してください。
+また、コードを変更する場合はどのような意図で変更するのかを詳しく教えてください。
+
