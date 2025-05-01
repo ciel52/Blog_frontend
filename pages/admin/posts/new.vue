@@ -13,7 +13,7 @@
           placeholder="曲のタイトルを入力"
         />
       </div>
-      
+
       <div class="form-group">
         <label for="artist">アーティスト</label>
         <input
@@ -25,7 +25,7 @@
           placeholder="アーティスト名を入力"
         />
       </div>
-      
+
       <div class="form-group">
         <label for="body">本文</label>
         <textarea
@@ -51,15 +51,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { API_ENDPOINTS } from '~/constants/api'
-import { useAuth } from '~/composables/useAuth'
+import { useBlog } from '~/composables/useBlog'
 
 definePageMeta({
   layout: 'admin'
 })
 
 const router = useRouter()
-const { getToken } = useAuth()
+const { createPost, error: blogError } = useBlog()
 
 const song_title = ref('')
 const artist = ref('')
@@ -69,50 +68,14 @@ const isSubmitting = ref(false)
 const handleSubmit = async () => {
   try {
     isSubmitting.value = true
-    
-    const requestBody = {
+
+    const postData = {
       song_title: song_title.value,
       artist: artist.value,
       body: body.value
     }
-    
-    const token = getToken()
-    if (!token) {
-      throw new Error('認証情報が見つかりません。再度ログインしてください。')
-    }
-    
-    const url = API_ENDPOINTS.ADMIN.POSTS()
-    console.log('リクエスト詳細:', {
-      url,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Token ${token}`
-      },
-      body: requestBody
-    })
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Token ${token}`
-      },
-      body: JSON.stringify(requestBody)
-    })
 
-    const responseData = await response.json().catch(() => null)
-    console.log('レスポンス詳細:', {
-      status: response.status,
-      statusText: response.statusText,
-      data: responseData
-    })
-
-    if (!response.ok) {
-      const errorMessage = responseData?.error || responseData?.detail || `投稿の作成に失敗しました (${response.status})`
-      throw new Error(errorMessage)
-    }
-
+    await createPost(postData)
     router.push('/admin/posts')
   } catch (error) {
     console.error('投稿エラー:', error)
@@ -204,4 +167,4 @@ textarea.form-control {
   background: #f5f5f5;
   color: #333;
 }
-</style> 
+</style>

@@ -67,8 +67,8 @@ definePageMeta({
 
 const router = useRouter()
 const route = useRoute()
-const { getToken } = useAuth()
-const { fetchPostById } = useBlog()
+const { getTokens } = useAuth()
+const { fetchPostById, updatePost } = useBlog()
 
 const song_title = ref('')
 const artist = ref('')
@@ -103,28 +103,18 @@ onMounted(async () => {
 const handleSubmit = async () => {
   try {
     isSubmitting.value = true
-    const token = getToken()
     
-    const response = await fetch(API_ENDPOINTS.ADMIN.POST_DETAIL(parseInt(postId)), {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Token ${token}`
-      },
-      body: JSON.stringify({
-        song_title: song_title.value,
-        artist: artist.value,
-        body: body.value
-      })
+    const updatedPost = await updatePost(parseInt(postId), {
+      song_title: song_title.value,
+      artist: artist.value,
+      body: body.value
     })
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null)
-      console.error('更新エラー詳細:', errorData)
+    if (updatedPost) {
+      router.push('/admin/posts')
+    } else {
       throw new Error('投稿の更新に失敗しました')
     }
-
-    router.push('/admin/posts')
   } catch (error) {
     console.error('更新エラー:', error)
     alert('投稿の更新に失敗しました。もう一度お試しください。')

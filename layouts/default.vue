@@ -24,4 +24,4 @@ import TheFooter from '~/components/TheFooter.vue'
   flex: 1;
   padding: 40px 0;
 }
-</style> 
+</style>

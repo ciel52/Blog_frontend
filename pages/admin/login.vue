@@ -42,22 +42,29 @@
 import { ref } from 'vue'
 import { useAuth } from '~/composables/useAuth'
 
+definePageMeta({
+  layout: 'auth'
+})
+
 const username = ref('')
 const password = ref('')
 const { login, isLoading, error } = useAuth()
 
 const handleLogin = async () => {
-  await login(username.value, password.value)
+  try {
+    await login(username.value, password.value)
+    // ログイン成功時に管理者ページにリダイレクト
+    navigateTo('/admin/posts')
+  } catch (e) {
+    console.error('ログインエラー:', e)
+  }
 }
 </script>
 
 <style scoped>
 .login-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  width: 100%;
+  max-width: 400px;
 }
 
 .login-form {
@@ -66,7 +73,6 @@ const handleLogin = async () => {
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   width: 100%;
-  max-width: 400px;
 }
 
 h1 {
@@ -133,4 +139,4 @@ input:focus {
   opacity: 0.7;
   cursor: not-allowed;
 }
-</style> 
+</style>

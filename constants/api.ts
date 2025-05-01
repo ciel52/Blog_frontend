@@ -1,12 +1,13 @@
-import { useRuntimeConfig } from '#app'
-
+// APIのベースURL
 const API_BASE = 'http://localhost:8000'
 
+// APIエンドポイントの定義
 export const API_ENDPOINTS = {
   // 認証用エンドポイント
   AUTH: {
     LOGIN: () => `${API_BASE}/api/token/`,
     REFRESH: () => `${API_BASE}/api/token/refresh/`,
+    VERIFY: () => `${API_BASE}/api/token/verify/`,
   },
   // ユーザー用エンドポイント
   USER: {
@@ -18,4 +19,4 @@ export const API_ENDPOINTS = {
     POSTS: () => `${API_BASE}/blog/admin/posts/`,
     POST_DETAIL: (id: number) => `${API_BASE}/blog/admin/posts/${id}/`
   }
-} as const 
+} as const

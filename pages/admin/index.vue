@@ -1,24 +1,45 @@
 <template>
   <div class="admin-dashboard">
     <h1>管理者ダッシュボード</h1>
-    
-    <div class="dashboard-grid">
-      <div class="dashboard-card">
-        <h2>投稿管理</h2>
-        <p>ブログ記事の作成、編集、削除を行います。</p>
-        <NuxtLink to="/admin/posts/new" class="card-btn">新規投稿</NuxtLink>
-      </div>
-      
-      <div class="dashboard-card">
-        <h2>投稿一覧</h2>
-        <p>既存の投稿を確認、編集、削除します。</p>
-        <NuxtLink to="/admin/posts" class="card-btn">投稿一覧へ</NuxtLink>
+    <div v-if="loading">読み込み中...</div>
+    <div v-else-if="error">{{ error }}</div>
+    <div v-else>
+      <div class="dashboard-grid">
+        <div class="dashboard-card">
+          <h2>投稿管理</h2>
+          <p>ブログ記事の作成、編集、削除を行います。</p>
+          <NuxtLink to="/admin/posts/new" class="card-btn">新規投稿</NuxtLink>
+        </div>
+
+        <div class="dashboard-card">
+          <h2>投稿一覧</h2>
+          <p>既存の投稿を確認、編集、削除します。</p>
+          <NuxtLink to="/admin/posts" class="card-btn">投稿一覧へ</NuxtLink>
+        </div>
+
+        <div class="dashboard-card">
+          <h2>サイト表示</h2>
+          <p>ユーザー向けのサイトを表示します。</p>
+          <NuxtLink to="/" class="card-btn">サイトを表示</NuxtLink>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
+import { useBlog } from '~/composables/useBlog'
+
+const { loading, error, checkAdminAuth } = useBlog()
+
+onMounted(async () => {
+  const isAuthenticated = await checkAdminAuth()
+  if (!isAuthenticated) {
+    return
+  }
+})
+
 definePageMeta({
   layout: 'admin'
 })

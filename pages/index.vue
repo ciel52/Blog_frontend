@@ -23,7 +23,6 @@
           <div class="post-content">
             <h2 class="post-title">{{ post.song_title }}</h2>
             <p class="post-artist">アーティスト: {{ post.artist }}</p>
-            <p class="post-excerpt">{{ post.body.substring(0, 200) }}...</p>
           </div>
           <div class="post-footer">
             <NuxtLink :to="`/posts/${post.id}`" class="read-more">

@@ -8,15 +8,15 @@
     <div v-if="loading" class="loading">
       読み込み中...
     </div>
-    
+
     <div v-else-if="error" class="error">
       {{ error }}
     </div>
-    
+
     <div v-else-if="posts.length === 0" class="no-posts">
       投稿がありません
     </div>
-    
+
     <div v-else class="posts-table">
       <table>
         <thead>
@@ -56,7 +56,7 @@ definePageMeta({
 })
 
 const { posts, loading, error, fetchPosts } = useBlog()
-const { getToken } = useAuth()
+const { getTokens } = useAuth()
 
 onMounted(() => {
   fetchPosts(true)
@@ -74,20 +74,20 @@ const deletePost = async (id: number) => {
   if (!confirm('この投稿を削除してもよろしいですか？')) {
     return
   }
-  
+
   try {
-    const token = getToken()
+    const tokens = getTokens()
     const response = await fetch(API_ENDPOINTS.ADMIN.POST_DETAIL(id), {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${tokens}`
       }
     })
-    
+
     if (!response.ok) {
       throw new Error('投稿の削除に失敗しました')
     }
-    
+
     // 投稿一覧を再取得
     fetchPosts(true)
   } catch (error) {
@@ -208,13 +208,13 @@ tr:hover {
     gap: 1rem;
     align-items: flex-start;
   }
-  
+
   th, td {
     padding: 0.75rem 0.5rem;
   }
-  
+
   .actions {
     flex-direction: column;
   }
 }
-</style> 
+</style>

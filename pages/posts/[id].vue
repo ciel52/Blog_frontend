@@ -12,7 +12,7 @@
 
     <div v-else-if="currentPost" class="post-content">
       <div class="post-header">
-        <div class="category-label">{{ getCategoryLabel(currentPost) }}</div>
+        <div class="category-label">{{ getCategoryLabel() }}</div>
         <h1 class="post-title">{{ currentPost.song_title }}</h1>
         <div class="post-meta">
           <span class="post-date">{{ formatDate(currentPost.posted_at) }}</span>
@@ -52,7 +52,7 @@ const formatDate = (dateString: string) => {
   return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
 }
 
-const getCategoryLabel = (post: BlogPost) => {
+const getCategoryLabel = () => {
   return '音楽日記'
 }
 
@@ -66,7 +66,7 @@ onMounted(async () => {
     router.push('/')
     return
   }
-  
+
   try {
     await fetchPostById(postId)
   } catch (error) {
