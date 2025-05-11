@@ -1,12 +1,6 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useApi } from './useApi'
-import { API_ENDPOINTS } from '~/constants/api'
-
-interface AuthTokens {
-  access: string;
-  refresh: string;
-}
 
 export const useAuth = () => {
   const router = useRouter()
@@ -19,13 +13,13 @@ export const useAuth = () => {
     try {
       const tokens = localStorage.getItem('auth_tokens')
       if (!tokens) return null
-      
+
       const parsedTokens = JSON.parse(tokens)
       if (!parsedTokens.access || !parsedTokens.refresh) {
         console.error('トークンの形式が不正です:', parsedTokens)
         return null
       }
-      
+
       return parsedTokens
     } catch (e) {
       console.error('トークンの取得に失敗しました:', e)
@@ -38,7 +32,7 @@ export const useAuth = () => {
       if (!tokens.access || !tokens.refresh) {
         throw new Error('トークンの形式が不正です')
       }
-      
+
       localStorage.setItem('auth_tokens', JSON.stringify(tokens))
       isAuthenticated.value = true
     } catch (e) {
@@ -60,7 +54,7 @@ export const useAuth = () => {
   const login = async (username: string, password: string) => {
     isLoading.value = true
     error.value = null
-    
+
     try {
       const response = await fetch(endpoints.auth.login(), {
         method: 'POST',
@@ -78,7 +72,7 @@ export const useAuth = () => {
 
       const tokens = await response.json()
       console.log('ログイン成功、トークン:', tokens)
-      
+
       if (!tokens.access || !tokens.refresh) {
         throw new Error('トークンの形式が不正です')
       }
@@ -86,7 +80,7 @@ export const useAuth = () => {
       // トークンの前後の空白を削除
       tokens.access = tokens.access.trim()
       tokens.refresh = tokens.refresh.trim()
-      
+
       setTokens(tokens)
       isAuthenticated.value = true
       return tokens

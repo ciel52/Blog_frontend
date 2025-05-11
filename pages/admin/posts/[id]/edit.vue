@@ -59,7 +59,6 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
 import { useBlog } from '~/composables/useBlog'
-import { API_ENDPOINTS } from '~/constants/api'
 
 definePageMeta({
   layout: 'admin'
@@ -67,7 +66,6 @@ definePageMeta({
 
 const router = useRouter()
 const route = useRoute()
-const { getTokens } = useAuth()
 const { fetchPostById, updatePost } = useBlog()
 
 const song_title = ref('')

@@ -58,7 +58,7 @@ definePageMeta({
 })
 
 const router = useRouter()
-const { createPost, error: blogError } = useBlog()
+const { createPost } = useBlog()
 
 const song_title = ref('')
 const artist = ref('')

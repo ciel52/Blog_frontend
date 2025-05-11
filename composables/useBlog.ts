@@ -28,15 +28,15 @@ export const useBlog = () => {
   const fetchPosts = async (isAdmin = false) => {
     loading.value = true
     error.value = null
-    
+
     try {
       const endpoint = isAdmin ? endpoints.admin.posts() : endpoints.user.posts()
-      
+
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
         'X-Requested-With': 'XMLHttpRequest'
       }
-      
+
       // 管理者画面の場合のみ認証トークンを追加
       if (isAdmin) {
         const tokens = getTokens()
@@ -46,12 +46,12 @@ export const useBlog = () => {
         }
         headers['Authorization'] = `Bearer ${tokens.access}`
       }
-      
+
       const response = await fetch(endpoint, {
         headers,
         mode: 'cors'
       })
-      
+
       if (!response.ok) {
         if (response.status === 401 && isAdmin) {
           handleAuthError()
@@ -59,7 +59,7 @@ export const useBlog = () => {
         }
         throw new Error(`投稿の取得に失敗しました (${response.status})`)
       }
-      
+
       const data = await response.json()
       posts.value = Array.isArray(data) ? data : data.results || []
     } catch (e) {
@@ -73,15 +73,15 @@ export const useBlog = () => {
   const fetchPostById = async (id: number, isAdmin = false): Promise<BlogPost | null> => {
     loading.value = true
     error.value = null
-    
+
     try {
       const endpoint = isAdmin ? endpoints.admin.postDetail(id) : endpoints.user.postDetail(id)
-      
+
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
         'X-Requested-With': 'XMLHttpRequest'
       }
-      
+
       // 管理者画面の場合のみ認証トークンを追加
       if (isAdmin) {
         const tokens = getTokens()
@@ -91,12 +91,12 @@ export const useBlog = () => {
         }
         headers['Authorization'] = `Bearer ${tokens.access}`
       }
-      
+
       const response = await fetch(endpoint, {
         headers,
         mode: 'cors'
       })
-      
+
       if (!response.ok) {
         if (response.status === 404) {
           currentPost.value = null
@@ -108,7 +108,7 @@ export const useBlog = () => {
         }
         throw new Error(`投稿の取得に失敗しました (${response.status})`)
       }
-      
+
       const data = await response.json()
       currentPost.value = data
       return data
@@ -123,7 +123,7 @@ export const useBlog = () => {
   const createPost = async (postData: Omit<BlogPost, 'id' | 'slug' | 'posted_at'>): Promise<BlogPost | null> => {
     loading.value = true
     error.value = null
-    
+
     try {
       const tokens = getTokens()
       if (!tokens?.access) {
@@ -152,7 +152,7 @@ export const useBlog = () => {
         handleAuthError()
         throw new Error('トークンが無効です。ログインし直してください。')
       }
-      
+
       const response = await fetch(endpoints.admin.posts(), {
         method: 'POST',
         headers: {
@@ -162,18 +162,18 @@ export const useBlog = () => {
         },
         body: JSON.stringify(postData)
       })
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => null)
         console.error('エラーレスポンス:', errorData)
-        
+
         if (response.status === 401) {
           handleAuthError()
           throw new Error('管理者権限がありません。ログインし直してください。')
         }
         throw new Error(`投稿の作成に失敗しました (${response.status})`)
       }
-      
+
       const data = await response.json()
       return data
     } catch (e) {
@@ -187,7 +187,7 @@ export const useBlog = () => {
   const updatePost = async (id: number, postData: Partial<BlogPost>): Promise<BlogPost | null> => {
     loading.value = true
     error.value = null
-    
+
     try {
       const tokens = getTokens()
       if (!tokens?.access) {
@@ -216,7 +216,7 @@ export const useBlog = () => {
         handleAuthError()
         throw new Error('トークンが無効です。ログインし直してください。')
       }
-      
+
       const response = await fetch(endpoints.admin.postDetail(id), {
         method: 'PUT',
         headers: {
@@ -226,18 +226,18 @@ export const useBlog = () => {
         },
         body: JSON.stringify(postData)
       })
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => null)
         console.error('エラーレスポンス:', errorData)
-        
+
         if (response.status === 401) {
           handleAuthError()
           throw new Error('管理者権限がありません。ログインし直してください。')
         }
         throw new Error(`投稿の更新に失敗しました (${response.status})`)
       }
-      
+
       const data = await response.json()
       return data
     } catch (e) {
@@ -251,7 +251,7 @@ export const useBlog = () => {
   const deletePost = async (id: number): Promise<boolean> => {
     loading.value = true
     error.value = null
-    
+
     try {
       const tokens = getTokens()
       if (!tokens?.access) {
@@ -264,7 +264,7 @@ export const useBlog = () => {
         handleAuthError()
         throw new Error('トークンが無効です。ログインし直してください。')
       }
-      
+
       const response = await fetch(endpoints.admin.postDetail(id), {
         method: 'DELETE',
         headers: {
@@ -273,7 +273,7 @@ export const useBlog = () => {
           'X-Requested-With': 'XMLHttpRequest'
         }
       })
-      
+
       if (!response.ok) {
         if (response.status === 401) {
           handleAuthError()
@@ -281,7 +281,7 @@ export const useBlog = () => {
         }
         throw new Error(`投稿の削除に失敗しました (${response.status})`)
       }
-      
+
       return true
     } catch (e) {
       error.value = e instanceof Error ? e.message : '予期せぬエラーが発生しました'

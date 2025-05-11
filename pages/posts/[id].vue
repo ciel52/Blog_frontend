@@ -41,7 +41,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useBlog, type BlogPost } from '~/composables/useBlog'
+import { useBlog } from '~/composables/useBlog'
 
 const router = useRouter()
 const route = useRoute()
