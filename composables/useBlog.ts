@@ -25,30 +25,32 @@ export const useBlog = () => {
     router.push('/admin/login')
   }
 
+  const getAuthHeaders = (isAdmin: boolean): HeadersInit => {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+
+    if (isAdmin) {
+      const tokens = getTokens()
+      if (!tokens?.access) {
+        handleAuthError()
+        throw new Error('管理者画面にアクセスするにはログインが必要です。')
+      }
+      headers['Authorization'] = `Bearer ${tokens.access.trim()}`
+    }
+
+    return headers
+  }
+
   const fetchPosts = async (isAdmin = false) => {
     loading.value = true
     error.value = null
 
     try {
       const endpoint = isAdmin ? endpoints.admin.posts() : endpoints.user.posts()
-
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
-      }
-
-      // 管理者画面の場合のみ認証トークンを追加
-      if (isAdmin) {
-        const tokens = getTokens()
-        if (!tokens?.access) {
-          handleAuthError()
-          throw new Error('管理者画面にアクセスするにはログインが必要です。')
-        }
-        headers['Authorization'] = `Bearer ${tokens.access}`
-      }
-
       const response = await fetch(endpoint, {
-        headers,
+        headers: getAuthHeaders(isAdmin),
         mode: 'cors'
       })
 
@@ -76,24 +78,8 @@ export const useBlog = () => {
 
     try {
       const endpoint = isAdmin ? endpoints.admin.postDetail(id) : endpoints.user.postDetail(id)
-
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
-      }
-
-      // 管理者画面の場合のみ認証トークンを追加
-      if (isAdmin) {
-        const tokens = getTokens()
-        if (!tokens?.access) {
-          handleAuthError()
-          throw new Error('管理者画面にアクセスするにはログインが必要です。')
-        }
-        headers['Authorization'] = `Bearer ${tokens.access}`
-      }
-
       const response = await fetch(endpoint, {
-        headers,
+        headers: getAuthHeaders(isAdmin),
         mode: 'cors'
       })
 
@@ -125,48 +111,14 @@ export const useBlog = () => {
     error.value = null
 
     try {
-      const tokens = getTokens()
-      if (!tokens?.access) {
-        handleAuthError()
-        throw new Error('管理者画面にアクセスするにはログインが必要です。')
-      }
-
-      const accessToken = tokens.access.trim()
-      if (typeof accessToken !== 'string') {
-        handleAuthError()
-        throw new Error('トークンが無効です。ログインし直してください。')
-      }
-
-      // トークンの検証
-      const verifyResponse = await fetch(endpoints.auth.verify(), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({ token: accessToken })
-      })
-
-      if (!verifyResponse.ok) {
-        handleAuthError()
-        throw new Error('トークンが無効です。ログインし直してください。')
-      }
-
+      const headers = getAuthHeaders(true)
       const response = await fetch(endpoints.admin.posts(), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'X-Requested-With': 'XMLHttpRequest'
-        },
+        headers,
         body: JSON.stringify(postData)
       })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null)
-        console.error('エラーレスポンス:', errorData)
-
         if (response.status === 401) {
           handleAuthError()
           throw new Error('管理者権限がありません。ログインし直してください。')
@@ -174,8 +126,7 @@ export const useBlog = () => {
         throw new Error(`投稿の作成に失敗しました (${response.status})`)
       }
 
-      const data = await response.json()
-      return data
+      return await response.json()
     } catch (e) {
       error.value = e instanceof Error ? e.message : '予期せぬエラーが発生しました'
       throw e
@@ -189,48 +140,14 @@ export const useBlog = () => {
     error.value = null
 
     try {
-      const tokens = getTokens()
-      if (!tokens?.access) {
-        handleAuthError()
-        throw new Error('管理者画面にアクセスするにはログインが必要です。')
-      }
-
-      const accessToken = tokens.access.trim()
-      if (typeof accessToken !== 'string') {
-        handleAuthError()
-        throw new Error('トークンが無効です。ログインし直してください。')
-      }
-
-      // トークンの検証
-      const verifyResponse = await fetch(endpoints.auth.verify(), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({ token: accessToken })
-      })
-
-      if (!verifyResponse.ok) {
-        handleAuthError()
-        throw new Error('トークンが無効です。ログインし直してください。')
-      }
-
+      const headers = getAuthHeaders(true)
       const response = await fetch(endpoints.admin.postDetail(id), {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'X-Requested-With': 'XMLHttpRequest'
-        },
+        headers,
         body: JSON.stringify(postData)
       })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null)
-        console.error('エラーレスポンス:', errorData)
-
         if (response.status === 401) {
           handleAuthError()
           throw new Error('管理者権限がありません。ログインし直してください。')
@@ -238,8 +155,7 @@ export const useBlog = () => {
         throw new Error(`投稿の更新に失敗しました (${response.status})`)
       }
 
-      const data = await response.json()
-      return data
+      return await response.json()
     } catch (e) {
       error.value = e instanceof Error ? e.message : '予期せぬエラーが発生しました'
       throw e
@@ -253,25 +169,10 @@ export const useBlog = () => {
     error.value = null
 
     try {
-      const tokens = getTokens()
-      if (!tokens?.access) {
-        handleAuthError()
-        throw new Error('管理者画面にアクセスするにはログインが必要です。')
-      }
-
-      const accessToken = tokens.access.trim()
-      if (typeof accessToken !== 'string') {
-        handleAuthError()
-        throw new Error('トークンが無効です。ログインし直してください。')
-      }
-
+      const headers = getAuthHeaders(true)
       const response = await fetch(endpoints.admin.postDetail(id), {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'X-Requested-With': 'XMLHttpRequest'
-        }
+        headers
       })
 
       if (!response.ok) {
@@ -292,25 +193,10 @@ export const useBlog = () => {
   }
 
   const checkAdminAuth = async (): Promise<boolean> => {
-    const tokens = getTokens()
-    if (!tokens?.access) {
-      handleAuthError()
-      return false
-    }
-
-    const accessToken = tokens.access.trim()
-    if (typeof accessToken !== 'string') {
-      handleAuthError()
-      return false
-    }
-
     try {
+      const headers = getAuthHeaders(true)
       const response = await fetch(endpoints.admin.posts(), {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'X-Requested-With': 'XMLHttpRequest'
-        },
+        headers,
         mode: 'cors'
       })
 

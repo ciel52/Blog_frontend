@@ -10,45 +10,28 @@ export const useAuth = () => {
   const error = ref<string | null>(null)
 
   const getTokens = (): { access: string; refresh: string } | null => {
+    const tokens = localStorage.getItem('auth_tokens')
+    if (!tokens) return null
+
     try {
-      const tokens = localStorage.getItem('auth_tokens')
-      if (!tokens) return null
-
       const parsedTokens = JSON.parse(tokens)
-      if (!parsedTokens.access || !parsedTokens.refresh) {
-        console.error('トークンの形式が不正です:', parsedTokens)
-        return null
-      }
-
-      return parsedTokens
-    } catch (e) {
-      console.error('トークンの取得に失敗しました:', e)
+      return parsedTokens.access && parsedTokens.refresh ? parsedTokens : null
+    } catch {
       return null
     }
   }
 
   const setTokens = (tokens: { access: string; refresh: string }) => {
-    try {
-      if (!tokens.access || !tokens.refresh) {
-        throw new Error('トークンの形式が不正です')
-      }
-
-      localStorage.setItem('auth_tokens', JSON.stringify(tokens))
-      isAuthenticated.value = true
-    } catch (e) {
-      console.error('トークンの保存に失敗しました:', e)
-      throw e
+    if (!tokens.access || !tokens.refresh) {
+      throw new Error('トークンの形式が不正です')
     }
+    localStorage.setItem('auth_tokens', JSON.stringify(tokens))
+    isAuthenticated.value = true
   }
 
   const removeTokens = () => {
-    try {
-      localStorage.removeItem('auth_tokens')
-      isAuthenticated.value = false
-    } catch (e) {
-      console.error('トークンの削除に失敗しました:', e)
-      throw e
-    }
+    localStorage.removeItem('auth_tokens')
+    isAuthenticated.value = false
   }
 
   const login = async (username: string, password: string) => {
@@ -71,22 +54,13 @@ export const useAuth = () => {
       }
 
       const tokens = await response.json()
-      console.log('ログイン成功、トークン:', tokens)
-
-      if (!tokens.access || !tokens.refresh) {
-        throw new Error('トークンの形式が不正です')
-      }
-
-      // トークンの前後の空白を削除
-      tokens.access = tokens.access.trim()
-      tokens.refresh = tokens.refresh.trim()
-
-      setTokens(tokens)
-      isAuthenticated.value = true
+      setTokens({
+        access: tokens.access.trim(),
+        refresh: tokens.refresh.trim()
+      })
       return tokens
     } catch (e) {
       error.value = e instanceof Error ? e.message : '予期せぬエラーが発生しました'
-      console.error('ログインエラー:', e)
       throw e
     } finally {
       isLoading.value = false
@@ -95,7 +69,6 @@ export const useAuth = () => {
 
   const logout = () => {
     removeTokens()
-    isAuthenticated.value = false
     router.push('/admin/login')
   }
 
@@ -119,7 +92,6 @@ export const useAuth = () => {
       })
 
       if (!response.ok) {
-        // トークンが無効な場合、リフレッシュトークンで新しいトークンを取得
         const refreshResponse = await fetch(endpoints.auth.refresh(), {
           method: 'POST',
           headers: {
@@ -141,8 +113,7 @@ export const useAuth = () => {
 
       isAuthenticated.value = true
       return true
-    } catch (e) {
-      console.error('認証チェックエラー:', e)
+    } catch {
       isAuthenticated.value = false
       router.push('/admin/login')
       return false
